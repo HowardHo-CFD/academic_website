@@ -34,14 +34,17 @@ summary: "
 
 <div style="background: rgba(15, 23, 42, 0.5); padding: 2rem; border-radius: 12px; backdrop-filter: blur(8px); color: #ffffff;">
 
-## Interactive Tools :zap:
+## Interactive Tools :zap: 
 
-- [Buoyancy Simulator](interactive-tools/buoyancy/)
-- [Hydrostatic Pressure Simulator](interactive-tools/hydrostatic-pressure/)
-- [Curved Plate Pressure Simulator](interactive-tools/curved-plate-pressure/)
-- [Cone Viscometer Velocity Profile Simulator](interactive-tools/cone-viscometer/)
-- [Surface Tension Simulator - Droplet](interactive-tools/droplet/)
-- [Surface Tension Simulator - Capillary Tube](interactive-tools/capillary-tube/)
+- [Buoyancy Simulator 🧊](interactive-tools/buoyancy/)
+- [Hydrostatic Pressure Simulator 🤿](interactive-tools/hydrostatic-pressure/)
+- [Curved Plate Pressure Simulator ⚓](interactive-tools/curved-plate-pressure/)
+- [Cone Viscometer Velocity Profile Simulator 🔽](interactive-tools/cone-viscometer/)
+- [Surface Tension Simulator - Droplet 💧](interactive-tools/droplet/)
+- [Surface Tension Simulator - Capillary Tube 🧪](interactive-tools/capillary-tube/)
+- [Bernoulli Equation Simulator - Pipe 🚰](interactive-tools/bernoulli-pipe/)
+
+- [Bernoulli Equation Simulator - Airfoil ✈](interactive-tools/bernoulli-airfoil/)
 
 ## Slides and Handout :book:
 - [Sample Slides - Drag Force](../../files/fluids/Drag-slides.pdf)
@@ -49,4 +52,4 @@ summary: "
 <!-- - [Google Drive](https://drive.google.com/drive/folders/1UJttktjh7cqhusC3yaC5t-AoLlOOup7s?usp=sharing) -->
 
 ## Class Signing Sheet ✍🏻
-- [Class of 2024 - Teaching Assistant](../../files/fluids/MIE312-2024.jpg)
+- [Class of 2024-2025](../../files/fluids/MIE312-2024.jpg)

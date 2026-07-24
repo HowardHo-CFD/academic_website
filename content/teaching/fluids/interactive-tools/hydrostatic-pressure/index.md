@@ -1,5 +1,5 @@
 ---
-title: "Hydrostatic Pressure on Flat Plate"
+title: "Hydrostatic Pressure on Flat Plate 🤿"
 layout: "simple"
 showDate: false
 showReadingTime: false

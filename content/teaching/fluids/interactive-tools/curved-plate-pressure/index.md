@@ -1,5 +1,5 @@
 ---
-title: "Hydrostatic Pressure on Curved Plate"
+title: "Hydrostatic Pressure on Curved Plate ⚓"
 layout: "simple"
 showDate: false
 showReadingTime: false

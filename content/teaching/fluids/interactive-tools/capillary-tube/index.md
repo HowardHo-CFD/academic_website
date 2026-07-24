@@ -1,5 +1,5 @@
 ---
-title: "Surface Tension Simulator - Capillary Tube"
+title: "Surface Tension Simulator - Capillary Tube 🧪"
 layout: "simple"
 showDate: false
 showReadingTime: false

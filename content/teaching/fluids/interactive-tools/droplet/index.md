@@ -1,5 +1,5 @@
 ---
-title: "Surface Tension Simulator - Droplet"
+title: "Surface Tension Simulator - Droplet 💧"
 layout: "simple"
 showDate: false
 showReadingTime: false

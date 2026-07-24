@@ -1,5 +1,5 @@
 ---
-title: "Buoyancy Simulator"
+title: "Buoyancy Simulator 🧊"
 layout: "simple"
 showDate: false
 showReadingTime: false

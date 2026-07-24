@@ -1,0 +1,454 @@
+<div class="bernoulli-widget">
+  <div class="canvas-container">
+    <canvas id="tunnelCanvas" width="600" height="450"></canvas>
+    <canvas id="barCanvas" width="300" height="450"></canvas>
+  </div>
+  
+  <div class="controls-panel">
+    <div class="control-group">
+      <label for="alphaSlider">Angle of Attack (°):</label>
+      <input type="range" id="alphaSlider" min="0" max="30" step="1" value="10">
+      <span id="alphaValue">10°</span>
+    </div>
+    
+    <div class="control-group">
+      <label for="vSlider">Wind Speed (m/s):</label>
+      <input type="range" id="vSlider" min="10" max="100" step="5" value="50">
+      <span id="vValue">50 m/s</span>
+    </div>
+
+    <div class="control-group">
+      <label for="y0Slider">Probe Streamline (y):</label>
+      <input type="range" id="y0Slider" min="-1.5" max="1.5" step="0.01" value="0.1">
+      <span id="y0Value">0.10 m</span>
+    </div>
+
+    <div class="control-group" style="width: 100%;">
+      <label for="timeSlider">Move Particle:</label>
+      <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="0.3">
+    </div>
+  </div>
+</div>
+
+<style>
+  /* =========================================
+     SCOPED CSS
+     ========================================= */
+  .bernoulli-widget {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 960px;
+    margin: 20px auto; 
+  }
+  
+  .bernoulli-widget .canvas-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 15px;
+    width: 100%;
+    justify-content: center;
+    align-items: stretch;
+  }
+  
+  .bernoulli-widget canvas {
+    border-radius: 8px;
+    background-color: #f4f6f9;
+    border: 1px solid #ccc;
+    height: auto;
+    min-width: 0;
+  }
+  
+  .bernoulli-widget #tunnelCanvas { width: 66%; }
+  .bernoulli-widget #barCanvas { width: 33%; background-color: #ffffff; }
+  
+  .bernoulli-widget .controls-panel {
+    width: 100%;
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+  }
+  
+  .bernoulli-widget .control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1;
+    min-width: 250px;
+  }
+  
+  .bernoulli-widget label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    margin: 0;
+  }
+  
+  .bernoulli-widget input[type="range"] {
+    cursor: pointer;
+    flex-grow: 1;
+    margin: 0;
+  }
+  
+  .bernoulli-widget span {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    min-width: 55px;
+    text-align: right;
+  }
+</style>
+
+<script>
+(function () {
+  const tunnelCanvas = document.getElementById("tunnelCanvas");
+  const ctxT = tunnelCanvas.getContext("2d");
+  const barCanvas = document.getElementById("barCanvas");
+  const ctxB = barCanvas.getContext("2d");
+
+  const alphaSlider = document.getElementById("alphaSlider");
+  const vSlider = document.getElementById("vSlider");
+  const y0Slider = document.getElementById("y0Slider");
+  const timeSlider = document.getElementById("timeSlider");
+  
+  const alphaVal = document.getElementById("alphaValue");
+  const vVal = document.getElementById("vValue");
+  const y0Val = document.getElementById("y0Value");
+
+  // ==========================================
+  // Custom Complex Math Library
+  // ==========================================
+  const cAdd = (a, b) => ({ r: a.r + b.r, i: a.i + b.i });
+  const cSub = (a, b) => ({ r: a.r - b.r, i: a.i - b.i });
+  const cMul = (a, b) => ({ r: a.r * b.r - a.i * b.i, i: a.r * b.i + a.i * b.r });
+  const cInv = (a) => { const d = a.r*a.r + a.i*a.i; return { r: a.r/d, i: -a.i/d }; };
+  const cConj = (a) => ({ r: a.r, i: -a.i });
+  const cAbs = (a) => Math.sqrt(a.r*a.r + a.i*a.i);
+  const cExpI = (theta) => ({ r: Math.cos(theta), i: Math.sin(theta) }); // e^(i*theta)
+
+  // ==========================================
+  // Physics Constants (NACA 0012 Equivalent)
+  // ==========================================
+  const RHO = 1.225;
+  const P_INF = 0.0;
+  const dx = 0.10, dy = 0.0;
+  const ZETA_C = { r: -dx, i: dy };
+  const A = cAbs(cSub({ r: 1.0, i: 0.0 }, ZETA_C)); 
+
+  // Precompute Base Airfoil Shape
+  const airfoilBaseZ = [];
+  for (let i = 0; i <= 250; i++) {
+    const theta = (i / 250) * 2 * Math.PI;
+    const offset = cMul({ r: A, i: 0 }, cExpI(theta));
+    const zeta = cAdd(ZETA_C, offset);
+    const Z = cAdd(zeta, cInv(zeta));
+    airfoilBaseZ.push(Z);
+  }
+
+  // ==========================================
+  // Physics Engine
+  // ==========================================
+  function computeVelocity(zeta, V_inf, alpha_rad) {
+    const beta = Math.asin(ZETA_C.i / A);
+    const Gamma = 4 * Math.PI * V_inf * A * Math.sin(alpha_rad + beta);
+    
+    const zeta_prime = cSub(zeta, ZETA_C);
+    const exp_mia = cExpI(-alpha_rad);
+    const exp_ia = cExpI(alpha_rad);
+    
+    // A^2 / zeta_prime^2
+    const zp_sq = cMul(zeta_prime, zeta_prime);
+    const A2_div_zp2 = cMul({r: A*A, i: 0}, cInv(zp_sq));
+    
+    // V_inf * (exp(-ia) - (A^2/z'^2)*exp(ia))
+    const term1 = cMul({r: V_inf, i: 0}, cSub(exp_mia, cMul(A2_div_zp2, exp_ia)));
+    // i * Gamma / (2 * pi * zeta_prime)
+    const term2 = cMul({r: 0, i: Gamma / (2 * Math.PI)}, cInv(zeta_prime));
+    
+    const F_prime = cAdd(term1, term2);
+    const V_zeta = cConj(F_prime);
+    
+    let zeta_sq = cMul(zeta, zeta);
+    let dZ_dzeta = cSub({r: 1, i: 0}, cInv(zeta_sq));
+    if (cAbs(dZ_dzeta) < 1e-5) dZ_dzeta = {r: 1e-5, i: 0};
+    
+    const V_Z = cMul(V_zeta, cInv(cConj(dZ_dzeta)));
+    return { V_zeta, V_Z };
+  }
+
+  function integrateStreamline(y_off, V_inf, alpha_deg) {
+    const alpha_rad = alpha_deg * Math.PI / 180;
+    
+    // Start far upstream, rotate into horizontal frame
+    let zeta = cMul({r: -5.0, i: y_off}, cExpI(alpha_rad));
+    const dt = 0.01 / V_inf;
+    
+    const path = [];
+    for (let step = 0; step < 1200; step++) {
+      // Cylinder boundary check
+      let diff = cSub(zeta, ZETA_C);
+      let dist = cAbs(diff);
+      if (dist < A) {
+        zeta = cAdd(ZETA_C, { r: A * diff.r / dist, i: A * diff.i / dist });
+      }
+      
+      const { V_zeta, V_Z } = computeVelocity(zeta, V_inf, alpha_rad);
+      
+      const Z = cAdd(zeta, cInv(zeta));
+      // Rotate back to visual frame
+      const Z_vis = cMul(Z, cExpI(-alpha_rad));
+      const V_Z_vis = cMul(V_Z, cExpI(-alpha_rad));
+      
+      path.push({ Z: Z_vis, V: V_Z_vis });
+      
+      zeta = cAdd(zeta, { r: V_zeta.r * dt, i: V_zeta.i * dt });
+      
+      if (Z_vis.r > 4.5) break;
+    }
+    return path;
+  }
+
+  // ==========================================
+  // Rendering Helpers
+  // ==========================================
+  const wT = tunnelCanvas.width;
+  const hT = tunnelCanvas.height;
+  const X_MIN = -3.5, X_MAX = 3.5;
+  const Y_MIN = -2.5, Y_MAX = 2.5;
+
+  function toPxT(x, y) {
+    const px = ((x - X_MIN) / (X_MAX - X_MIN)) * wT;
+    const py = hT - ((y - Y_MIN) / (Y_MAX - Y_MIN)) * hT;
+    return [px, py];
+  }
+
+  function drawArrow(ctx, fx, fy, tx, ty, color, lw) {
+    const headLen = 14;
+    const angle = Math.atan2(ty - fy, tx - fx);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - headLen * Math.cos(angle - Math.PI/6), ty - headLen * Math.sin(angle - Math.PI/6));
+    ctx.lineTo(tx - headLen * Math.cos(angle + Math.PI/6), ty - headLen * Math.sin(angle + Math.PI/6));
+    ctx.closePath(); ctx.fill();
+  }
+
+  // State Caching for performance
+  let lastAlpha = null, lastV = null;
+  let bgPaths = [];
+  const bgOffsets = [0.15, 0.5, 1.0, 1.6, -0.15, -0.5, -1.0, -1.6];
+
+  // ==========================================
+  // Main Render Loop
+  // ==========================================
+  function render() {
+    const alpha = parseFloat(alphaSlider.value);
+    const V_inf = parseFloat(vSlider.value);
+    const y0 = parseFloat(y0Slider.value);
+    const t_frac = parseFloat(timeSlider.value);
+
+    // Recompute background only if AoA or Wind Speed changes
+    if (alpha !== lastAlpha || V_inf !== lastV) {
+      bgPaths = bgOffsets.map(y => integrateStreamline(y, V_inf, alpha));
+      lastAlpha = alpha;
+      lastV = V_inf;
+    }
+
+    // 1. Draw Tunnel Canvas
+    ctxT.clearRect(0, 0, wT, hT);
+    
+    // Draw Grid
+    ctxT.strokeStyle = "rgba(0,0,0,0.05)";
+    ctxT.lineWidth = 1;
+    ctxT.beginPath();
+    for(let x = Math.ceil(X_MIN); x <= Math.floor(X_MAX); x++) {
+      let [px1, py1] = toPxT(x, Y_MIN); let [px2, py2] = toPxT(x, Y_MAX);
+      ctxT.moveTo(px1, py1); ctxT.lineTo(px2, py2);
+    }
+    for(let y = Math.ceil(Y_MIN); y <= Math.floor(Y_MAX); y++) {
+      let [px1, py1] = toPxT(X_MIN, y); let [px2, py2] = toPxT(X_MAX, y);
+      ctxT.moveTo(px1, py1); ctxT.lineTo(px2, py2);
+    }
+    ctxT.stroke();
+
+    // Draw Background Streamlines
+    ctxT.strokeStyle = "#95a5a6";
+    ctxT.lineWidth = 1.0;
+    bgPaths.forEach(path => {
+      ctxT.beginPath();
+      path.forEach((pt, i) => {
+        let [px, py] = toPxT(pt.Z.r, pt.Z.i);
+        if (i === 0) ctxT.moveTo(px, py); else ctxT.lineTo(px, py);
+      });
+      ctxT.stroke();
+    });
+
+    // Draw Airfoil
+    const alpha_rad = alpha * Math.PI / 180;
+    ctxT.beginPath();
+    airfoilBaseZ.forEach((Z, i) => {
+      const Z_vis = cMul(Z, cExpI(-alpha_rad));
+      let [px, py] = toPxT(Z_vis.r, Z_vis.i);
+      if (i === 0) ctxT.moveTo(px, py); else ctxT.lineTo(px, py);
+    });
+    ctxT.closePath();
+    ctxT.fillStyle = "silver"; ctxT.fill();
+    ctxT.strokeStyle = "black"; ctxT.lineWidth = 2; ctxT.stroke();
+
+    // Draw Probe Streamline
+    const probePath = integrateStreamline(y0, V_inf, alpha);
+    ctxT.beginPath();
+    probePath.forEach((pt, i) => {
+      let [px, py] = toPxT(pt.Z.r, pt.Z.i);
+      if (i === 0) ctxT.moveTo(px, py); else ctxT.lineTo(px, py);
+    });
+    ctxT.strokeStyle = "#e67e22"; ctxT.lineWidth = 2.5; ctxT.stroke();
+
+    // Draw Probe Particle & Arrow
+    const pIdx = Math.floor(t_frac * (probePath.length - 1));
+    const pData = probePath[pIdx];
+    const V_mag = cAbs(pData.V);
+    let [ppx, ppy] = toPxT(pData.Z.r, pData.Z.i);
+    
+    ctxT.beginPath();
+    ctxT.arc(ppx, ppy, 6, 0, 2 * Math.PI);
+    ctxT.fillStyle = "navy"; ctxT.fill();
+    ctxT.strokeStyle = "white"; ctxT.lineWidth = 2; ctxT.stroke();
+
+    const arrow_scale = 0.012;
+    let [tpx, tpy] = toPxT(pData.Z.r + pData.V.r * arrow_scale, pData.Z.i + pData.V.i * arrow_scale);
+    drawArrow(ctxT, ppx, ppy, tpx, tpy, "#c0392b", 2.5);
+
+    // Overlay Texts
+    ctxT.fillStyle = "black";
+    ctxT.textAlign = "center";
+    ctxT.textBaseline = "top";
+    ctxT.font = "bold 15px sans-serif";
+    ctxT.fillText(`NACA 0012, AOA=${alpha}°`, wT/2, 12);
+
+    ctxT.fillStyle = "rgba(255,255,255,0.9)";
+    ctxT.fillRect(10, 35, 200, 30);
+    ctxT.strokeStyle = "gray"; ctxT.strokeRect(10, 35, 200, 30);
+    ctxT.fillStyle = "black";
+    ctxT.textAlign = "left";
+    ctxT.textBaseline = "middle";
+    ctxT.font = "13px sans-serif";
+    ctxT.fillText(`Probe Velocity: ${V_mag.toFixed(1)} m/s`, 20, 50);
+
+    // ==========================================
+    // 2. Draw Bar Chart
+    // ==========================================
+    ctxB.clearRect(0, 0, barCanvas.width, barCanvas.height);
+    const wB = barCanvas.width, hB = barCanvas.height;
+    const topM = 50, botM = 40, leftM = 45, rightM = 15;
+    const pHt = hB - topM - botM, pWd = wB - leftM - rightM;
+
+    const q_inf = 0.5 * RHO * V_inf * V_inf;
+    const tot_p = P_INF + q_inf;
+    const q_local = 0.5 * RHO * V_mag * V_mag;
+    const p_local = tot_p - q_local;
+
+    const max_q = 0.5 * RHO * (V_inf * 3.5)**2; 
+    const yMax = max_q * 0.4;
+    const yMin = -max_q * 0.7;
+
+    function pToY(val) {
+      return hB - botM - ((val - yMin) / (yMax - yMin)) * pHt;
+    }
+
+    // Chart Titles
+    ctxB.fillStyle = "black";
+    ctxB.textAlign = "center"; ctxB.textBaseline = "top";
+    ctxB.font = "bold 14px sans-serif";
+    ctxB.fillText("Energy Balance", wB/2, 10);
+    ctxB.fillStyle = "#555"; ctxB.font = "12px sans-serif";
+    ctxB.fillText(`Total = ${(tot_p/1000).toFixed(1)} kPa (constant)`, wB/2, 28);
+
+    // Axes
+    ctxB.beginPath();
+    ctxB.moveTo(leftM, topM - 10); ctxB.lineTo(leftM, hB - botM);
+    ctxB.strokeStyle = "black"; ctxB.lineWidth = 1; ctxB.stroke();
+    
+    const zeroY = pToY(0);
+    ctxB.beginPath();
+    ctxB.moveTo(leftM, zeroY); ctxB.lineTo(wB - rightM, zeroY); ctxB.stroke();
+
+    // Total Line
+    const totY = pToY(tot_p);
+    ctxB.beginPath();
+    ctxB.moveTo(leftM, totY); ctxB.lineTo(wB - rightM, totY);
+    ctxB.strokeStyle = "#2c3e50"; ctxB.setLineDash([4, 4]); ctxB.lineWidth = 2; ctxB.stroke();
+    ctxB.setLineDash([]);
+    ctxB.textAlign = "right"; ctxB.textBaseline = "bottom"; ctxB.font = "11px sans-serif";
+    ctxB.fillText(`Total Pressure`, wB - rightM, totY - 4);
+
+    // Bars
+    const bars = [
+      { v: p_local, c: "#3498db", l: "Static (p)" },
+      { v: q_local, c: "#e74c3c", l: "Dynamic (q)" }
+    ];
+    const bW = 50;
+    const spacing = (pWd - 2*bW)/3;
+
+    bars.forEach((b, i) => {
+      let x = leftM + spacing + i*(bW + spacing);
+      let y = pToY(Math.max(0, b.v));
+      let ht = Math.abs(pToY(0) - pToY(b.v));
+      
+      ctxB.fillStyle = b.c; ctxB.fillRect(x, y, bW, ht);
+      ctxB.strokeStyle = "black"; ctxB.lineWidth = 1; ctxB.strokeRect(x, y, bW, ht);
+      
+      ctxB.fillStyle = "black"; ctxB.textAlign = "center"; ctxB.textBaseline = "top";
+      ctxB.fillText(b.l, x + bW/2, hB - botM + 8);
+      
+      ctxB.textBaseline = "middle";
+      let valY = b.v >= 0 ? y - 10 : y + ht + 10;
+      ctxB.font = "bold 12px sans-serif";
+      ctxB.fillText(`${(b.v/1000).toFixed(1)} kPa`, x + bW/2, valY);
+    });
+
+    // Y Axis Label
+    ctxB.save();
+    ctxB.translate(14, hB/2); ctxB.rotate(-Math.PI/2);
+    ctxB.textAlign = "center"; ctxB.textBaseline = "middle";
+    ctxB.font = "13px sans-serif"; ctxB.fillStyle = "black";
+    ctxB.fillText("Gauge Pressure (kPa)", 0, 0);
+    ctxB.restore();
+  }
+
+  function update() {
+    alphaVal.textContent = alphaSlider.value + "°";
+    vVal.textContent = vSlider.value + " m/s";
+    y0Val.textContent = parseFloat(y0Slider.value).toFixed(2) + " m";
+    render();
+  }
+
+  alphaSlider.addEventListener("input", update);
+  vSlider.addEventListener("input", update);
+  y0Slider.addEventListener("input", update);
+  timeSlider.addEventListener("input", update);
+  
+  update();
+})();
+</script>

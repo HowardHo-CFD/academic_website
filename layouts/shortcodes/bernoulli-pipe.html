@@ -1,0 +1,505 @@
+<div class="bernoulli-widget">
+  <div class="canvas-container">
+    <!-- Internal resolution is 600x400 and 300x400, but CSS will scale them to fit -->
+    <canvas id="ductCanvas" width="600" height="400"></canvas>
+    <canvas id="barCanvas" width="300" height="400"></canvas>
+  </div>
+  
+  <div class="controls-panel">
+    <div class="control-group">
+      <label for="ratioSelect">Diameter:</label>
+      <select id="ratioSelect">
+        <option value="3.0">Inlet : Outlet = 1 : 3</option>
+        <option value="2.0">Inlet : Outlet = 1 : 2</option>
+        <option value="1.0" selected>Inlet : Outlet = 1 : 1</option>
+        <option value="0.5">Inlet : Outlet = 2 : 1</option>
+        <option value="0.33333333">Inlet : Outlet = 3 : 1</option>
+      </select>
+    </div>
+    
+    <div class="control-group">
+      <label for="altSelect">Elevation:</label>
+      <select id="altSelect">
+        <option value="-4.0">Δh = -4.0 m</option>
+        <option value="-2.0">Δh = -2.0 m</option>
+        <option value="0.0" selected>Δh = 0 m</option>
+        <option value="2.0">Δh = +2.0 m</option>
+        <option value="4.0">Δh = +4.0 m</option>
+      </select>
+    </div>
+
+    <div class="control-group slider-group">
+      <label for="xSlider">Probe x (m):</label>
+      <input type="range" id="xSlider" min="0.0" max="12.0" step="0.1" value="0.0">
+      <span id="xValue">0.0 m</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* =========================================
+     SCOPED CSS - Will not break your parent page
+     ========================================= */
+  .bernoulli-widget {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 960px; /* Safe width */
+    margin: 20px auto; 
+  }
+  
+  .bernoulli-widget .canvas-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap; /* Forces them to stay side-by-side */
+    gap: 15px;
+    width: 100%;
+    justify-content: center;
+    align-items: stretch;
+  }
+  
+  .bernoulli-widget canvas {
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 1px solid #eee;
+    height: auto; /* Scales height proportionately */
+    min-width: 0; /* Prevents flexbox overflow */
+  }
+  
+  /* Give the left plot roughly 66% and right plot 33% */
+  .bernoulli-widget #ductCanvas {
+    width: 66%;
+  }
+  
+  .bernoulli-widget #barCanvas {
+    width: 33%;
+  }
+  
+  .bernoulli-widget .controls-panel {
+    width: 100%;
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+  }
+  
+  .bernoulli-widget .control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .bernoulli-widget .slider-group {
+    flex-grow: 1;
+    max-width: 400px;
+  }
+  
+  .bernoulli-widget label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    margin: 0;
+  }
+  
+  .bernoulli-widget select {
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    margin: 0;
+    color: #000000; /* Forces dropdown text to be solid black */
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .bernoulli-widget option {
+    color: #000000; /* Forces dropdown options to be solid black */
+    background-color: #ffffff;
+  }
+  
+  .bernoulli-widget input[type="range"] {
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    margin: 0;
+    flex-grow: 1;
+  }
+  
+  .bernoulli-widget #xValue {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    min-width: 50px;
+    text-align: right;
+  }
+</style>
+
+<script>
+(function () {
+  const ductCanvas = document.getElementById("ductCanvas");
+  const ctxDuct = ductCanvas.getContext("2d");
+  
+  const barCanvas = document.getElementById("barCanvas");
+  const ctxBar = barCanvas.getContext("2d");
+
+  const ratioSelect = document.getElementById("ratioSelect");
+  const altSelect = document.getElementById("altSelect");
+  const xSlider = document.getElementById("xSlider");
+  const xLabel = document.getElementById("xValue");
+
+  // ==================================================
+  // Constants
+  // ==================================================
+  const rho = 1000.0;
+  const g = 9.81;
+  const p1 = 10000.0;
+  const V1 = 1.0;
+  const h1 = 1.0;
+  const L = 12.0;
+  const x1_pos = 2.0;
+  const x2_pos = 10.0;
+
+  const VECTOR_AUTO_SCALE = false;
+  const VECTOR_MANUAL_SCALE = 1.5;
+
+  const TOTAL_PRESSURE_KPA = (p1 + 0.5 * rho * V1 * V1) / 1000.0;
+
+  // ==================================================
+  // Physics & Geometry Helpers
+  // ==================================================
+  function smoothstep(t) {
+    t = Math.max(0, Math.min(1, t));
+    return t * t * (3 - 2 * t);
+  }
+
+  function half_height(x, ratio) {
+    let h_out = h1 * ratio;
+    if (x <= x1_pos) return h1;
+    if (x <= x2_pos) return h1 + (h_out - h1) * smoothstep((x - x1_pos) / (x2_pos - x1_pos));
+    return h_out;
+  }
+
+  function centerline_z(x, delta_h) {
+    if (x <= x1_pos) return 0.0;
+    if (x <= x2_pos) return delta_h * smoothstep((x - x1_pos) / (x2_pos - x1_pos));
+    return delta_h;
+  }
+
+  function velocity_at(x, ratio) {
+    return (V1 * h1) / half_height(x, ratio);
+  }
+
+  function pressure_at(x, ratio, delta_h) {
+    let V = velocity_at(x, ratio);
+    let z = centerline_z(x, delta_h);
+    return p1 + 0.5 * rho * (V1 * V1 - V * V) - rho * g * z;
+  }
+
+  // ==================================================
+  // Precompute Axis Bounds for Bar Chart
+  // ==================================================
+  let Y_BOT_KPA = 0, Y_TOP_KPA = TOTAL_PRESSURE_KPA;
+  (function precomputeBounds() {
+    let minKpa = 0;
+    let maxKpa = TOTAL_PRESSURE_KPA;
+    const testRatios = [3.0, 2.0, 1.0, 0.5, 0.33333333];
+    const testDhs = [-4, -2, 0, 2, 4];
+    
+    for (let r of testRatios) {
+      for (let dh of testDhs) {
+        for (let x = 0; x <= L; x += 0.5) {
+          let v = velocity_at(x, r);
+          let z = centerline_z(x, dh);
+          let p = pressure_at(x, r, dh) / 1000.0;
+          let dyn = (0.5 * rho * v * v) / 1000.0;
+          let hyd = (rho * g * z) / 1000.0;
+          
+          minKpa = Math.min(minKpa, p, dyn, hyd);
+          maxKpa = Math.max(maxKpa, p, dyn, hyd, TOTAL_PRESSURE_KPA);
+        }
+      }
+    }
+    Y_BOT_KPA = Math.min(minKpa * 1.15, 0);
+    Y_TOP_KPA = maxKpa * 1.15;
+  })();
+
+  const Y_SPAN_DUCT = 3.0 + 4.0 + 0.7; 
+
+  // ==================================================
+  // Drawing Helpers
+  // ==================================================
+  function toPxDuct(x, y) {
+    const wXMin = -0.5, wXMax = L + 0.5;
+    const px = ((x - wXMin) / (wXMax - wXMin)) * ductCanvas.width;
+    const py = ductCanvas.height - ((y + Y_SPAN_DUCT) / (2 * Y_SPAN_DUCT)) * ductCanvas.height;
+    return [px, py];
+  }
+
+  function drawArrow(ctx, fx, fy, tx, ty, color, lw = 2) {
+    const headLen = 14;
+    const angle = Math.atan2(ty - fy, tx - fx);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - headLen * Math.cos(angle - Math.PI / 6), ty - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tx - headLen * Math.cos(angle + Math.PI / 6), ty - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // ==================================================
+  // Render Loop
+  // ==================================================
+  function render() {
+    const ratio = parseFloat(ratioSelect.value);
+    const dh = parseFloat(altSelect.value);
+    const x_p = parseFloat(xSlider.value);
+    
+    // --- 1. Draw Left Canvas (Duct) ---
+    ctxDuct.clearRect(0, 0, ductCanvas.width, ductCanvas.height);
+    
+    ctxDuct.beginPath();
+    for (let x = 0; x <= L; x += 0.1) {
+      let [px, py] = toPxDuct(x, centerline_z(x, dh) - half_height(x, ratio));
+      if (x === 0) ctxDuct.moveTo(px, py);
+      else ctxDuct.lineTo(px, py);
+    }
+    for (let x = L; x >= 0; x -= 0.1) {
+      let [px, py] = toPxDuct(x, centerline_z(x, dh) + half_height(x, ratio));
+      ctxDuct.lineTo(px, py);
+    }
+    ctxDuct.closePath();
+    
+    ctxDuct.fillStyle = "#cfe8f7";
+    ctxDuct.fill();
+    ctxDuct.strokeStyle = "black";
+    ctxDuct.lineWidth = 1.8;
+    ctxDuct.stroke();
+
+    ctxDuct.beginPath();
+    for (let x = 0; x <= L; x += 0.2) {
+      let [px, py] = toPxDuct(x, centerline_z(x, dh));
+      if (x === 0) ctxDuct.moveTo(px, py);
+      else ctxDuct.lineTo(px, py);
+    }
+    ctxDuct.strokeStyle = "#0b6fa4";
+    ctxDuct.lineWidth = 1.4;
+    ctxDuct.setLineDash([8, 6]);
+    ctxDuct.stroke();
+    ctxDuct.setLineDash([]);
+
+    [x1_pos, x2_pos].forEach((xs, i) => {
+      let z_here = centerline_z(xs, dh);
+      let h_here = half_height(xs, ratio);
+      let [bx, by1] = toPxDuct(xs, z_here - h_here);
+      let [, by2] = toPxDuct(xs, z_here + h_here);
+      
+      ctxDuct.beginPath();
+      ctxDuct.moveTo(bx, by1);
+      ctxDuct.lineTo(bx, by2);
+      ctxDuct.strokeStyle = "gray";
+      ctxDuct.lineWidth = 0.8;
+      ctxDuct.setLineDash([4, 4]);
+      ctxDuct.stroke();
+      ctxDuct.setLineDash([]);
+
+      let [cx, cy] = toPxDuct(xs, z_here + h_here + 0.6);
+      ctxDuct.beginPath();
+      ctxDuct.arc(cx, cy, 14, 0, 2 * Math.PI);
+      ctxDuct.fillStyle = "white";
+      ctxDuct.fill();
+      ctxDuct.strokeStyle = "black";
+      ctxDuct.lineWidth = 1.2;
+      ctxDuct.stroke();
+      ctxDuct.fillStyle = "black";
+      ctxDuct.font = "14px sans-serif";
+      ctxDuct.textAlign = "center";
+      ctxDuct.textBaseline = "middle";
+      ctxDuct.fillText(i === 0 ? "1" : "2", cx, cy + 1);
+    });
+
+    let z_here = centerline_z(x_p, dh);
+    let v_here = velocity_at(x_p, ratio);
+    let p_here = pressure_at(x_p, ratio, dh);
+    let [px, py] = toPxDuct(x_p, z_here);
+    
+    ctxDuct.beginPath();
+    ctxDuct.arc(px, py, 6, 0, 2 * Math.PI);
+    ctxDuct.fillStyle = "#0b6fa4";
+    ctxDuct.fill();
+    ctxDuct.strokeStyle = "black";
+    ctxDuct.lineWidth = 1;
+    ctxDuct.stroke();
+
+    let dx = 0.05;
+    let z_ahead = centerline_z(Math.min(x_p + dx, L), dh);
+    let angle = Math.atan2(z_ahead - z_here, dx);
+    let scaleFactor = VECTOR_AUTO_SCALE ? 30.0 / Math.max(v_here, 0.1) : VECTOR_MANUAL_SCALE * 40.0;
+    let arrLenPx = v_here * scaleFactor;
+    let tx = px + arrLenPx * Math.cos(angle);
+    let ty = py - arrLenPx * Math.sin(angle); 
+    
+    drawArrow(ctxDuct, px, py, tx, ty, "#0b6fa4", 2.2);
+
+    ctxDuct.fillStyle = "rgba(255, 255, 255, 0.88)";
+    ctxDuct.fillRect(10, 10, 245, 125);
+    ctxDuct.strokeStyle = "#ccc";
+    ctxDuct.lineWidth = 1;
+    ctxDuct.strokeRect(10, 10, 245, 125);
+    ctxDuct.fillStyle = "#111";
+    ctxDuct.font = "13px -apple-system, sans-serif";
+    ctxDuct.textAlign = "left";
+    ctxDuct.textBaseline = "top";
+    let textLines = [
+      `x = ${x_p.toFixed(2)} m`,
+      `Local half-height, h(x) = ${half_height(x_p, ratio).toFixed(3)} m`,
+      `Elevation, z(x) = ${(z_here>0?"+":"")+z_here.toFixed(3)} m`,
+      `Velocity, V(x) = ${v_here.toFixed(3)} m/s`,
+      `Static p(x) = ${(p_here/1000).toFixed(2)} kPa`
+    ];
+    textLines.forEach((line, idx) => {
+      ctxDuct.fillText(line, 20, 20 + idx * 20);
+    });
+
+    // --- 2. Draw Right Canvas (Bar Chart) ---
+    ctxBar.clearRect(0, 0, barCanvas.width, barCanvas.height);
+    
+    let wB = barCanvas.width;
+    let hB = barCanvas.height;
+    
+    // Reserve top 60px for title, left 40px for axis, bottom 40px for labels
+    let topMargin = 60;
+    let leftMargin = 40;
+    let bottomMargin = 40;
+    let rightMargin = 15;
+    let plotHeight = hB - topMargin - bottomMargin;
+    let plotWidth = wB - leftMargin - rightMargin;
+
+    function pToY(val) {
+      return hB - bottomMargin - ((val - Y_BOT_KPA) / (Y_TOP_KPA - Y_BOT_KPA)) * plotHeight;
+    }
+    
+    let p_stat = p_here / 1000.0;
+    let p_dyn = (0.5 * rho * v_here * v_here) / 1000.0;
+    let p_hyd = (rho * g * z_here) / 1000.0;
+
+    let bars = [
+      { val: p_stat, col: "#e67e22", lbl: "Static" },
+      { val: p_dyn, col: "#8e44ad", lbl: "Dynamic" },
+      { val: p_hyd, col: "#16a085", lbl: "Hydro" } 
+    ];
+
+    let barW = 40; 
+    let spacing = (plotWidth - (3 * barW)) / 4;
+    
+    // Draw Titles
+    ctxBar.fillStyle = "black";
+    ctxBar.textAlign = "center";
+    ctxBar.textBaseline = "top";
+    ctxBar.font = "bold 14px sans-serif";
+    ctxBar.fillText("Pressure Distribution", wB / 2, 15);
+    ctxBar.font = "12px sans-serif";
+    ctxBar.fillStyle = "#555";
+    ctxBar.fillText(`Total = ${TOTAL_PRESSURE_KPA.toFixed(2)} kPa (constant)`, wB / 2, 35);
+
+    // Draw Y Axis (Left Spine)
+    ctxBar.beginPath();
+    ctxBar.moveTo(leftMargin, topMargin - 10);
+    ctxBar.lineTo(leftMargin, hB - bottomMargin);
+    ctxBar.strokeStyle = "black";
+    ctxBar.lineWidth = 1;
+    ctxBar.stroke();
+
+    // Draw zero line (Bottom Spine)
+    let zeroY = pToY(0);
+    ctxBar.beginPath();
+    ctxBar.moveTo(leftMargin, zeroY);
+    ctxBar.lineTo(wB - rightMargin, zeroY);
+    ctxBar.stroke();
+
+    // Draw total pressure line (Dashed)
+    let totY = pToY(TOTAL_PRESSURE_KPA);
+    ctxBar.beginPath();
+    ctxBar.moveTo(leftMargin, totY);
+    ctxBar.lineTo(wB - rightMargin, totY);
+    ctxBar.strokeStyle = "#555";
+    ctxBar.setLineDash([4, 4]);
+    ctxBar.stroke();
+    ctxBar.setLineDash([]);
+    ctxBar.fillStyle = "#555";
+    ctxBar.textAlign = "right";
+    ctxBar.textBaseline = "bottom";
+    ctxBar.font = "11px sans-serif";
+    // Place label slightly above the dashed line
+    ctxBar.fillText(`Total Pressure`, wB - rightMargin, totY - 4);
+
+    // Draw bars
+    bars.forEach((b, i) => {
+      let x = leftMargin + spacing + i * (barW + spacing);
+      let y = pToY(Math.max(0, b.val));
+      let ht = Math.abs(pToY(0) - pToY(b.val));
+      
+      ctxBar.fillStyle = b.col;
+      ctxBar.fillRect(x, y, barW, ht);
+      ctxBar.strokeStyle = "black";
+      ctxBar.strokeRect(x, y, barW, ht);
+      
+      // Category Label (Static, Dynamic, Hydro)
+      ctxBar.fillStyle = "black";
+      ctxBar.textAlign = "center";
+      ctxBar.textBaseline = "top";
+      ctxBar.font = "12px sans-serif";
+      ctxBar.fillText(b.lbl, x + barW/2, hB - bottomMargin + 8);
+      
+      // Value Label (e.g. 10.00)
+      ctxBar.textBaseline = "middle";
+      let valY = b.val >= 0 ? y - 10 : y + ht + 10;
+      ctxBar.fillText(b.val.toFixed(2), x + barW/2, valY);
+    });
+    
+    // Y-Axis Title ("Pressure (kPa)")
+    ctxBar.save();
+    ctxBar.translate(14, hB / 2 + 10);
+    ctxBar.rotate(-Math.PI/2);
+    ctxBar.textAlign = "center";
+    ctxBar.textBaseline = "middle";
+    ctxBar.font = "13px sans-serif";
+    ctxBar.fillStyle = "black";
+    ctxBar.fillText("Pressure (kPa)", 0, 0);
+    ctxBar.restore();
+  }
+
+  function update() {
+    xLabel.textContent = parseFloat(xSlider.value).toFixed(1) + " m";
+    render();
+  }
+
+  ratioSelect.addEventListener("change", update);
+  altSelect.addEventListener("change", update);
+  xSlider.addEventListener("input", update);
+  
+  update();
+})();
+</script>

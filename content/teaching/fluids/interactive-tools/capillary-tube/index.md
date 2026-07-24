@@ -13,6 +13,6 @@ Use the sliders to adjust the contact angle \\(\theta\\) and select different li
 
 💡 Note: The column height vector \\(\vec{h}\\) is measured relative to the external reservoir level. When \\(\theta > 90^\circ\\) (e.g., Mercury), \\(\vec{h}\\) becomes negative and the net force vector flips upward.
 
-Source Code: [Google Colab](https://colab.research.google.com/drive/1aIp_4nBYOLwCpgkYn2m8BlaLscH78vym?usp=sharing)
+<!-- Source Code: [Google Colab](https://colab.research.google.com/drive/1aIp_4nBYOLwCpgkYn2m8BlaLscH78vym?usp=sharing) -->
 
 {{< capillary-tube >}}

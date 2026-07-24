@@ -20,6 +20,6 @@ This total pressure is the sum of three components:
 * **Hydrostatic Pressure** \\(\rho g z\\): The potential energy per unit volume due to elevation.
 
 
-Source Code: [Google Colab](https://colab.research.google.com/drive/1aIp_4nBYOLwCpgkYn2m8BlaLscH78vym?usp=sharing)
+<!-- Source Code: [Google Colab](https://colab.research.google.com/drive/1aIp_4nBYOLwCpgkYn2m8BlaLscH78vym?usp=sharing) -->
 
 {{< bernoulli-pipe >}}

@@ -14,6 +14,6 @@ Use the slider to change the centroid depth of the cube and observe how the subm
 Note: CB height is calculated from the bottom edge of the cube, with upward being +ve.
 
 
-Source Code: [Google Colab](https://colab.research.google.com/drive/1WlhBrH3q4H2Vwhhv2OOrn-f3iGb2SR5j)
+<!-- Source Code: [Google Colab](https://colab.research.google.com/drive/1WlhBrH3q4H2Vwhhv2OOrn-f3iGb2SR5j) -->
 
 {{< buoyancy >}}

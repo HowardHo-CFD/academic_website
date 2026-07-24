@@ -13,6 +13,6 @@ Use the slider to change the depth and angle of flat plate, observe how the pres
 
 💡 Notice how when the plate is not fully submerged, \\(y_{cp}\\) gets way deeper? This is becasue the equations used assume the whole object is fully submerged, so it kinda breaks when the object is only partially submerged.
 
-Source Code: [Google Colab](https://colab.research.google.com/drive/1SGP20sNfJ7Ix83BQ6Ol9LbZTFpvXkaiv)
+<!-- Source Code: [Google Colab](https://colab.research.google.com/drive/1SGP20sNfJ7Ix83BQ6Ol9LbZTFpvXkaiv) -->
 
 {{< hydrostatic-pressure >}}

@@ -7,6 +7,7 @@
   speed=45
   breakLines=false
   loop=true
+  lifeLike=false
 >}}
 
 "If we knew what we were doing, it wouldn't be called research" - Albert Einstein

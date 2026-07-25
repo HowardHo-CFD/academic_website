@@ -8,6 +8,11 @@ name = "Biography & CV"
 pageRef = "about"
 weight = 10
 
+#[[main]]
+#name = "Testing"
+#pageRef = "dummy"
+#weight = 100
+
 [[main]]
 name = "Research"
 pageRef = "research"

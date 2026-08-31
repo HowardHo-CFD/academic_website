@@ -17,3 +17,5 @@ Note that for the 2nd plot, \\(v_\theta\\) was rotated for visualization (techni
 <!-- Source Code: [Google Colab](https://colab.research.google.com/drive/1OOirNwnnebM2w55GMmz79ogSlh9vie_a#scrollTo=NtCxuEuoCP6Z) -->
 
 {{< cone-viscometer >}}
+
+<!-- {{< cone-viscometer-iso >}} -->

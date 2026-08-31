@@ -83,6 +83,8 @@ showWordCount: false
 <div class="project-thesis">Numerical Investigation of 3D Synthetic Jet In Crossflow</div>
 <div class="btn-row">
 {{< button href="../../files/PhD-thesis.pdf" target="_blank" >}}📥 Thesis (PDF){{< /button >}}
+{{< button href="../../files/posters/2026-MIE-Symposium.pdf" target="_blank" >}}📄 Poster (2026){{< /button >}}
+{{< button href="../../files/posters/SJA-Modelling-Poster.pdf" target="_blank" >}}📄 Poster (2024) {{< /button >}}
 </div>
 </div>
 </div>
@@ -99,7 +101,7 @@ showWordCount: false
 <h3>Learning Analytics & Forum Data to Target Student Support</h3>
 <div class="project-thesis"> Using Forum and Assessment Analytics to Target Student Support Needs in Engineering Dynamics</div>
 <div class="btn-row">
-{{< button href="../../files/Piazza-poster.pdf" target="_blank" >}}📄 Poster (PDF){{< /button >}}
+{{< button href="../../files/Piazza-poster.pdf" target="_blank" >}}📄 Poster (2026){{< /button >}}
 </div>
 </div>
 </div>
@@ -135,7 +137,7 @@ showWordCount: false
 <div class="btn-row">
 {{< button href="../../files/BEng-dissertation.pdf" target="_blank" >}}📥 Technical Report (PDF){{< /button >}}
 {{< button href="../../files/BEng-presentation.pdf" target="_blank" >}}📊 Presentation to Sponsor (PDF){{< /button >}}
-{{< button href="../../files/BEng-poster.pdf" target="_blank" >}}📄 Poster (PDF){{< /button >}}
+{{< button href="../../files/BEng-poster.pdf" target="_blank" >}}📄 Poster (2019){{< /button >}}
 </div>
 </div>
 </div>

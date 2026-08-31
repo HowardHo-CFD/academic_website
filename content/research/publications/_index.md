@@ -11,7 +11,7 @@ summary: " "
 
 ### Books & Book Chapters
 
-1. **Ho, H.H.**, Shirinzad, A., Essel, E.E., and Sullivan, P.E. (2025). Active Flow Control of an Airfoil in Turbulent Flow. In D. King & A. Stagner (Eds.), *Flow Turbulence Engineering In Transport* (Ch. 2). London: Institute of Engineering Technology.
+1. **Ho, H.H.**, Shirinzad, A., Essel, E.E., and Sullivan, P.E. (2025). Active Flow Control of an Airfoil in Turbulent Flow. In D. King & A. Stagner (Eds.), *Flow Turbulence Engineering In Transport* (Ch. 2). London: Institute of Engineering Technology.  <a href="https://digital-library.theiet.org/doi/abs/10.1049/PBTR052E_ch2">doi: abs/10.1049/PBTR052E_ch2</a><br>
 
 ---
 
@@ -20,19 +20,19 @@ summary: " "
 #### Published & Accepted
 
 <ol reversed>
-  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2026). Actuation Parameters and Boundary Layer Height Effects on a Circular Synthetic Jet in Crossflow. <i>Discover Fluid Mechanics</i>. [Accepted]<br>
+  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2026). Actuation Parameters and Boundary Layer Height Effects on a Circular Synthetic Jet in Crossflow. <i>Discover Fluid Mechanics</i>, 2 (7). <a href="https://doi.org/10.1007/s44369-026-00011-9"> doi: 10.1007/s44369-026-00011-9 </a><br>
   <b>Contribution:</b> Examined the effects of synthetic jet momentum, actuation frequency, and boundary layer height ratio in crossflow, demonstrating that a low to moderate boundary layer height ratio offers greater potential for near-wall actuation.</li>
 
-  <li>Chhetri, A., Ouedraogo, N.F., <b>Ho, H.H.</b>, Drummond, L., and Essel, E.E. (2025). Influence of Nozzle Convergence Angle on the Flow Characteristics of Synthetic Jets in a Turbulent Crossflow Boundary Layer. <i>ASME Journal of Fluids Engineering</i>, 147(8), 081203. <a href="https://doi.org/10.1115/1.4068035">doi:10.1115/1.4068035</a><br>
+  <li>Chhetri, A., Ouedraogo, N.F., <b>Ho, H.H.</b>, Drummond, L., and Essel, E.E. (2025). Influence of Nozzle Convergence Angle on the Flow Characteristics of Synthetic Jets in a Turbulent Crossflow Boundary Layer. <i>ASME Journal of Fluids Engineering</i>, 147(8), 081203. <a href="https://doi.org/10.1115/1.4068035">doi: 10.1115/1.4068035</a><br>
   <b>Contribution:</b> Numerically studied the effect of nozzle convergence angle on a circular synthetic jet actuator in a turbulent crossflow, finding that increasing the angle enhances jet momentum, flow mixing, and boundary layer penetration.</li>
 
-  <li><b>Ho, H.H.</b>, Shirinzad, A., Essel, E.E., and Sullivan, P.E. (2024). Synthetic Jet Actuators For Active Flow Control: A Review. <i>MDPI Fluids</i>, 9(12), 290. <a href="https://doi.org/10.3390/fluids9120290">doi:10.3390/fluids9120290</a><br>
+  <li><b>Ho, H.H.</b>, Shirinzad, A., Essel, E.E., and Sullivan, P.E. (2024). Synthetic Jet Actuators For Active Flow Control: A Review. <i>MDPI Fluids</i>, 9(12), 290. <a href="https://doi.org/10.3390/fluids9120290">doi: 10.3390/fluids9120290</a><br>
   <b>Contribution:</b> A comprehensive review explaining the working mechanism, design principles, and applications of SJAs. <i>(Invited Paper, Issue Cover, MDPI Fluids Best Paper Award Winner)</i>.</li>
 
-  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2024). Improving 3D Synthetic Jet Modelling In Crossflow. <i>ASME Journal of Fluids Engineering</i>, 146(3), 031301. <a href="https://doi.org/10.1115/1.4064185">doi:10.1115/1.4064185</a><br>
+  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2024). Improving 3D Synthetic Jet Modelling In Crossflow. <i>ASME Journal of Fluids Engineering</i>, 146(3), 031301. <a href="https://doi.org/10.1115/1.4064185">doi: 10.1115/1.4064185</a><br>
   <b>Contribution:</b> Investigated three methods for modeling 3D circular SJA in a crossflow boundary layer, demonstrating that partial modeling with an analytical solution produces comparable results to a full cavity dynamic mesh model while significantly reducing computational cost.</li>
 
-  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2022). The Interactions of a Circular Synthetic Jet with a Turbulent Crossflow. <i>AIP Physics of Fluids</i>, 34(7), 075109. <a href="https://doi.org/10.1063/5.0099533">doi:10.1063/5.0099533</a><br>
+  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2022). The Interactions of a Circular Synthetic Jet with a Turbulent Crossflow. <i>AIP Physics of Fluids</i>, 34(7), 075109. <a href="https://doi.org/10.1063/5.0099533">doi: 10.1063/5.0099533</a><br>
   <b>Contribution:</b> Showed that engineers can select jet momentum settings based on application goals: low momentum for wider spanwise separation control, or higher momentum for stronger control in the primary flow direction.</li>
 </ol>
 
@@ -67,17 +67,18 @@ summary: " "
 ---
 
 ### Symposiums & Submitted Reports
-
 <ol reversed>
-  <li><b>Ho, H.H.</b> (2026). <a href="/files/THE_Chicken_Report.pdf" target="_blank" rel="noopener noreferrer">THE Chicken Report</a>. <i>Technical Report Submitted to the Turbulence Research Lab</i>, Toronto, ON, Canada.</li>
+  <li><b>Ho, H.H.</b>, and Sullivan, P.E. (2026). <a href="/files/Piazza-poster.pdf" target="_blank" rel="noopener noreferrer"> Using Forum and Assessment Analytics to Target Student Support Needs</a>. <i> University of Toronto Engineering Research Conference, Toronto, Ontario, Canada.</li>
 
-  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2026). Large Eddy Simulation of Active Flow Control on a Circular Cylinder. <i>MIE Graduate Research Symposium</i>, Toronto, ON, Canada.</li>
+  <li><b>Ho, H.H.</b> (2026). <a href="/files/THE_Chicken_Report.pdf" target="_blank" rel="noopener noreferrer" style="text-decoration: underline;">THE Chicken Report</a>. <i>Technical Report Submitted to the Turbulence Research Lab</i>, Toronto, ON, Canada.</li>
+
+  <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2026). <a href="/files/posters/2026-MIE-Symposium.pdf" target="_blank" rel="noopener noreferrer"> Large Eddy Simulation of Active Flow Control on a Circular Cylinder </a>. <i>MIE Graduate Research Symposium</i>, Toronto, ON, Canada.</li>
 
   <li><b>Ho, H.H.</b>, Essel, E.E., and Sullivan, P.E. (2023). Synthetic Jet Issuing Into A Crossflow. <i>MIE Graduate Research Symposium</i>, Toronto, ON, Canada.</li>
 
-  <li><b>Ho, H.H.</b>, and Jefferson-Loveday, R. (2019). An Experimental Investigation of Oil Churning and Flow Regimes Within a Model Gearbox. <i>IBP Research Symposium</i>, Nottingham, UK.</li>
+  <li><b>Ho, H.H.</b>, and Jefferson-Loveday, R. (2019). <a href="/files/BEng-poster.pdf" target="_blank" rel="noopener noreferrer"> An Experimental Investigation of Oil Churning and Flow Regimes Within a Model Gearbox </a>. <i>IBP Research Symposium</i>, Nottingham, UK.</li>
 
-  <li><b>Ho, H.H.</b>, and Jefferson-Loveday, R. (2019). An Experimental Investigation of Oil Churning and Flow Regimes. <i>Technical Report Submitted to Romax Technology</i>, Nottingham, UK.</li>
+  <li><b>Ho, H.H.</b>, and Jefferson-Loveday, R. (2019). <a href="/files/BEng-presentation.pdf" target="_blank" rel="noopener noreferrer"> An Experimental Investigation of Oil Churning and Flow Regimes </a>. <i>Technical Report Submitted to Romax Technology</i>, Nottingham, UK.</li>
 </ol>
 
 </div>

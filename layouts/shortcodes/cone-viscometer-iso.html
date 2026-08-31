@@ -1,0 +1,363 @@
+<style>
+  .visc-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    color: #111111;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin: 1.5rem 0;
+  }
+  .visc-wrap canvas {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background-color: #ffffff;
+  }
+  .visc-panel-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    max-width: 900px;
+  }
+  .visc-controls {
+    width: 100%;
+    max-width: 640px;
+    margin-top: 10px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .visc-controls label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333333;
+    white-space: nowrap;
+    width: 100px;
+  }
+  .visc-controls input[type="range"] {
+    flex: 1;
+  }
+  .visc-controls .visc-val {
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333333;
+    min-width: 50px;
+    text-align: right;
+  }
+  .visc-section-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #444444;
+    margin: 18px 0 8px 0;
+    text-align: center;
+  }
+</style>
+
+<div class="visc-wrap">
+
+  <div class="visc-section-label">Vertical Profile (CCW): Radius r</div>
+  <div class="visc-panel-container">
+    <canvas class="visc-3d-vert" width="620" height="520"></canvas>
+  </div>
+  <div class="visc-controls">
+    <label>Radius r</label>
+    <input type="range" class="visc-rSlider" min="0.05" max="1.0" step="0.05" value="0.5">
+    <span class="visc-rValue visc-val">0.50</span>
+  </div>
+
+  <div class="visc-section-label">Horizontal Profile (CCW): Altitude z/h_max</div>
+  <div class="visc-panel-container">
+    <canvas class="visc-3d-horiz" width="620" height="520"></canvas>
+  </div>
+  <div class="visc-controls">
+    <label>z / h_max</label>
+    <input type="range" class="visc-altSlider" min="0.01" max="0.99" step="0.05" value="0.5">
+    <span class="visc-altValue visc-val">0.50</span>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// CHANGE ALL FONT SIZES HERE FOR CANVAS TEXT:
+// ============================================================
+const FONTS = {
+  label: "16px -apple-system, sans-serif",
+  body: "14px -apple-system, sans-serif",
+  axis: "12px -apple-system, sans-serif",
+};
+
+(function () {
+  // Grab the MOST RECENT HTML block rendered to avoid Colab cell duplication bugs
+  const wraps = document.querySelectorAll('.visc-wrap');
+  const container = wraps[wraps.length - 1];
+  if (!container) return; 
+
+  const R = 1.0;
+  const Omega = Math.PI / 2; // CCW rotation
+  const coneAngleDeg = 22;
+  const alpha = (coneAngleDeg * Math.PI) / 180;
+  const h_max = R * Math.tan(alpha);
+  const theta_s = -Math.PI / 4; // -45 deg view
+
+  // --- 3D to 2D Projection Engine ---
+  function getProjector(width, height, scale) {
+    const azim = -65 * Math.PI / 180;
+    const elev = 25 * Math.PI / 180;
+    const cx = Math.cos(azim), sx = Math.sin(azim);
+    const cy = Math.cos(elev), sy = Math.sin(elev);
+
+    return function(x, y, z) {
+      let px = x * cx + y * sx;
+      let py = (-x * sx + y * cx) * cy + z * sy;
+      return [width / 2 + px * scale, height / 2 + 80 - py * scale];
+    }
+  }
+
+  // --- Shared 3D Drawing Utilities ---
+  function draw3DArrow(ctx, proj, x, y, z, dx, dy, dz, color, width, headLen=8) {
+    let [px1, py1] = proj(x, y, z);
+    let [px2, py2] = proj(x + dx, y + dy, z + dz);
+    
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(px1, py1);
+    ctx.lineTo(px2, py2);
+    ctx.stroke();
+    
+    let angle = Math.atan2(py2 - py1, px2 - px1);
+    ctx.beginPath();
+    ctx.moveTo(px2, py2);
+    ctx.lineTo(px2 - headLen * Math.cos(angle - Math.PI / 6), py2 - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(px2 - headLen * Math.cos(angle + Math.PI / 6), py2 - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    
+    return [x + dx, y + dy, z + dz]; 
+  }
+
+  function drawGridAndSurfaces(ctx, proj) {
+    // Ground Grid
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    for(let r = -1; r <= 1; r += 0.5) {
+      let [px1, py1] = proj(r, -1, 0);
+      let [px2, py2] = proj(r, 1, 0);
+      ctx.beginPath(); ctx.moveTo(px1, py1); ctx.lineTo(px2, py2); ctx.stroke();
+      
+      let [px3, py3] = proj(-1, r, 0);
+      let [px4, py4] = proj(1, r, 0);
+      ctx.beginPath(); ctx.moveTo(px3, py3); ctx.lineTo(px4, py4); ctx.stroke();
+    }
+    
+    // Z Axis
+    ctx.strokeStyle = '#999';
+    let [ox, oy] = proj(0, 0, 0);
+    let [zx, zy] = proj(0, 0, 1.1);
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(zx, zy); ctx.stroke();
+    
+    ctx.fillStyle = '#444';
+    ctx.font = FONTS.axis;
+    [0, 0.5, 1.0].forEach(tick => {
+      let [tx, ty] = proj(0, 0, tick);
+      ctx.beginPath(); ctx.arc(tx, ty, 2, 0, Math.PI*2); ctx.fill();
+      ctx.fillText(tick.toFixed(1), tx - 25, ty + 4);
+    });
+
+    // Axis Labels
+    let [lx1, ly1] = proj(1.2, 0, 0);
+    ctx.fillText("X (r)", lx1, ly1);
+    let [lx2, ly2] = proj(0, 1.2, 0);
+    ctx.fillText("Y (r)", lx2, ly2);
+    let [lx3, ly3] = proj(0, 0, 1.15);
+    ctx.fillText("Norm Height", lx3-30, ly3 - 10);
+
+    // Surfaces Wireframe
+    const r_steps = 8, t_steps = 40;
+    ctx.strokeStyle = 'rgba(128,128,128,0.2)'; // Plate
+    for(let j = 1; j <= r_steps; j++) {
+      let r = (j / r_steps) * R;
+      ctx.beginPath();
+      for(let i = 0; i <= t_steps; i++) {
+        let theta = (i / t_steps) * 2 * Math.PI;
+        let [px, py] = proj(r * Math.cos(theta), r * Math.sin(theta), 0);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    
+    ctx.strokeStyle = 'rgba(135,206,235,0.4)'; // Cone
+    for(let j = 1; j <= r_steps; j++) {
+      let r = (j / r_steps) * R;
+      let z_norm = (r * Math.tan(alpha)) / h_max;
+      ctx.beginPath();
+      for(let i = 0; i <= t_steps; i++) {
+        let theta = (i / t_steps) * 2 * Math.PI;
+        let [px, py] = proj(r * Math.cos(theta), r * Math.sin(theta), z_norm);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // ============================================================
+  // PANEL 1: Vertical Profile
+  // ============================================================
+  (function () {
+    const canvas = container.querySelector(".visc-3d-vert");
+    if(!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const slider = container.querySelector(".visc-rSlider");
+    const label = container.querySelector(".visc-rValue");
+    const proj = getProjector(canvas.width, canvas.height, 220); 
+
+    function render(rSample) {
+      const h_local = rSample * Math.tan(alpha);
+      const x_base = rSample * Math.cos(theta_s);
+      const y_base = rSample * Math.sin(theta_s);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGridAndSurfaces(ctx, proj);
+
+      // Dash line
+      ctx.strokeStyle = '#e00';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      let [px1, py1] = proj(x_base, y_base, 0);
+      let [px2, py2] = proj(x_base, y_base, h_local / h_max);
+      ctx.moveTo(px1, py1); ctx.lineTo(px2, py2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 'r' Arrow
+      draw3DArrow(ctx, proj, 0, 0, 0, x_base, y_base, 0, '#000', 2);
+      let [tx, ty] = proj(x_base/2, y_base/2, 0);
+      ctx.fillStyle = '#000';
+      ctx.font = FONTS.body;
+      ctx.fillText("r", tx - 10, ty + 15);
+
+      // Velocity Vectors
+      const num_z = 8;
+      const scale = 0.3;
+      let tips = [];
+      for(let i = 0; i < num_z; i++) {
+        let z_phys = (i / (num_z - 1)) * h_local;
+        let z_norm = z_phys / h_max;
+        let v_theta = Omega * rSample * (z_phys / h_local);
+        let u = -v_theta * Math.sin(theta_s);
+        let v = v_theta * Math.cos(theta_s);
+        tips.push(draw3DArrow(ctx, proj, x_base, y_base, z_norm, u*scale, v*scale, 0, '#1a4fd6', 2));
+      }
+
+      // Solid Alpha Envelope Line
+      ctx.strokeStyle = 'rgba(26, 79, 214, 0.5)';
+      ctx.beginPath();
+      tips.forEach((t, i) => {
+        let [px, py] = proj(t[0], t[1], t[2]);
+        if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+    }
+
+    function update() {
+      const v = parseFloat(slider.value);
+      label.textContent = v.toFixed(2);
+      render(v);
+    }
+
+    slider.addEventListener("input", update);
+    update();
+  })();
+
+  // ============================================================
+  // PANEL 2: Horizontal Profile
+  // ============================================================
+  (function () {
+    const canvas = container.querySelector(".visc-3d-horiz");
+    if(!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const slider = container.querySelector(".visc-altSlider");
+    const label = container.querySelector(".visc-altValue");
+    const proj = getProjector(canvas.width, canvas.height, 220); 
+
+    function render(altFrac) {
+      const z_phys = altFrac * h_max;
+      const z_norm = altFrac;
+      let r_min = z_phys > 0 ? z_phys / Math.tan(alpha) : 0.0;
+      r_min = Math.min(r_min, R);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGridAndSurfaces(ctx, proj);
+
+      const r_steps = 5; 
+      let points = [];
+      for(let i = 0; i <= r_steps; i++) {
+        let r_val = r_min + (i / r_steps) * (R - r_min);
+        points.push({r: r_val, x: r_val * Math.cos(theta_s), y: r_val * Math.sin(theta_s)});
+      }
+
+      // Dash Line
+      if(points.length > 0) {
+        ctx.strokeStyle = '#e00';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        let [px1, py1] = proj(points[0].x, points[0].y, z_norm);
+        let [px2, py2] = proj(points[points.length-1].x, points[points.length-1].y, z_norm);
+        ctx.moveTo(px1, py1); ctx.lineTo(px2, py2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 'h' Arrow
+      if (z_norm > 0.01) {
+        let x_max = R * Math.cos(theta_s);
+        let y_max = R * Math.sin(theta_s);
+        draw3DArrow(ctx, proj, x_max, y_max, 0, 0, 0, z_norm, '#000', 2);
+        let [tx, ty] = proj(x_max, y_max, z_norm / 2);
+        ctx.fillStyle = '#000';
+        ctx.font = FONTS.body;
+        ctx.fillText("h", tx + 12, ty + 5);
+      }
+
+      // Velocity Vectors
+      const scale = 0.3;
+      let tips = [];
+      points.forEach(p => {
+        let v_theta = Omega * z_phys / Math.tan(alpha);
+        let u = -v_theta * Math.sin(theta_s);
+        let v = v_theta * Math.cos(theta_s);
+        tips.push(draw3DArrow(ctx, proj, p.x, p.y, z_norm, u*scale, v*scale, 0, '#008000', 2));
+      });
+
+      // Solid Alpha Envelope Line
+      ctx.strokeStyle = 'rgba(0, 128, 0, 0.5)';
+      ctx.beginPath();
+      tips.forEach((t, i) => {
+        let [px, py] = proj(t[0], t[1], t[2]);
+        if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+    }
+
+    function update() {
+      const v = parseFloat(slider.value);
+      label.textContent = v.toFixed(2);
+      render(v);
+    }
+
+    slider.addEventListener("input", update);
+    update();
+  })();
+
+})();
+</script>
